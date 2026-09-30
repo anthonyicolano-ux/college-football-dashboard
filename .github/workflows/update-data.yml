@@ -1,0 +1,40 @@
+name: Update college football data
+on:
+  workflow_dispatch:
+    inputs:
+      year:
+        description: Season year
+        default: '2026'
+        required: true
+  schedule:
+    - cron: '23 12 * * 0,1,5'
+permissions:
+  contents: write
+concurrency:
+  group: cfb-data-refresh
+  cancel-in-progress: false
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Check calculations
+        run: python -m unittest discover -s tests -v
+      - name: Fetch and validate data
+        env:
+          CFBD_API_KEY: ${{ secrets.CFBD_API_KEY }}
+          CFB_YEAR: ${{ inputs.year || '2026' }}
+        run: python scripts/update_cfb_data.py --year "$CFB_YEAR"
+      - name: Save validated dashboard data
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add data/teams.json
+          if ! git diff --cached --quiet; then
+            git commit -m 'Refresh validated college football data'
+            git push
+          fi
