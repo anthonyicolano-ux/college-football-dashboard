@@ -126,6 +126,67 @@ def offense_windows(history, team_map):
             windows[unit][period] = rows
     return windows
 
+def add_efficiency(windows, history, side):
+    """Decompose opportunity volume and efficiency on matched eligible samples.
+
+    Efficiency expectations weight each opponent's other-game rate by the
+    actual attempts observed against that opponent. Volume expectations use
+    opponents' other-game attempts per game. No new API fields are required.
+    """
+    baseline_side = 'allowed' if side == 'offense' else 'offense'
+    for unit in ('pass', 'rush'):
+        for period, limit in (('season', None), ('last3', 3), ('last1', 1)):
+            rows = windows[unit][period]
+            for row in rows:
+                tid = row['teamId']
+                selected = history[tid] if limit is None else history[tid][-limit:]
+                row.update(dict.fromkeys(('attemptsPerGame', 'volumeRatio', 'volumeExpected',
+                                         'volumeActual', 'adjustedEffRatio', 'effExpected', 'effActual',
+                                         'baselineMinGames', 'baselineAvgGames', 'effBaselineMinGames')))
+                row.update({'effBaselineGames': 0, 'volumeBaselineGames': 0})
+                if selected:
+                    row['attemptsPerGame'] = sum(g[side][unit]['attempts'] for g in selected) / len(selected)
+                volume_actual, volume_expected = [], []
+                eff_actual_yards, eff_attempts, eff_expected_yards, eff_counts = [], [], [], []
+                production_counts = []
+                for game in selected:
+                    others = [g for g in history[game['opponent']] if g['id'] != game['id']]
+                    if not others:
+                        continue
+                    yards = sum(g[baseline_side][unit]['yards'] for g in others)
+                    attempts = sum(g[baseline_side][unit]['attempts'] for g in others)
+                    if yards / len(others) > 0:
+                        production_counts.append(len(others))
+                    if attempts > 0:
+                        volume_actual.append(game[side][unit]['attempts'])
+                        volume_expected.append(attempts / len(others))
+                    observed_attempts = game[side][unit]['attempts']
+                    if yards > 0 and attempts > 0 and observed_attempts > 0:
+                        eff_actual_yards.append(game[side][unit]['yards'])
+                        eff_attempts.append(observed_attempts)
+                        eff_expected_yards.append(observed_attempts * yards / attempts)
+                        eff_counts.append(len(others))
+                if production_counts:
+                    row['baselineMinGames'] = min(production_counts)
+                    row['baselineAvgGames'] = sum(production_counts) / len(production_counts)
+                if volume_expected:
+                    row['volumeBaselineGames'] = len(volume_expected)
+                    row['volumeActual'] = sum(volume_actual) / len(volume_actual)
+                    row['volumeExpected'] = sum(volume_expected) / len(volume_expected)
+                    row['volumeRatio'] = 100 * sum(volume_actual) / sum(volume_expected)
+                if eff_expected_yards:
+                    row['effBaselineGames'] = len(eff_expected_yards)
+                    row['effBaselineMinGames'] = min(eff_counts)
+                    row['effActual'] = sum(eff_actual_yards) / sum(eff_attempts)
+                    row['effExpected'] = sum(eff_expected_yards) / sum(eff_attempts)
+                    row['adjustedEffRatio'] = 100 * sum(eff_actual_yards) / sum(eff_expected_yards)
+                row['effEligible'] = row['games'] > 0 and row['effBaselineGames'] == row['games']
+                row['_effSort'] = ((-1 if side == 'offense' else 1) * row['adjustedEffRatio']) if row['effEligible'] else None
+            rank(rows, '_effSort', 'effRank')
+            for row in rows:
+                del row['_effSort']
+    return windows
+
 def derive(teams, games, boxes, year):
     team_map = {int(t['id']): t for t in teams}
     if not team_map or len(team_map) != len(teams):
@@ -216,9 +277,9 @@ def derive(teams, games, boxes, year):
             windows[unit][period] = rows
     return {'schemaVersion': 1, 'season': year, 'generatedAt': datetime.now(timezone.utc).isoformat(),
             'source': 'CollegeFootballData', 'simulated': False, 'scope': 'FBS opponents only',
-            'completedGames': len(eligible), 'teamCount': len(teams), 'windows': windows,
-            'offenseWindows': offense_windows(history, team_map),
-            'methodologyVersion': 'opponent-production-v1'}
+            'completedGames': len(eligible), 'teamCount': len(teams), 'windows': add_efficiency(windows, history, 'allowed'),
+            'offenseWindows': add_efficiency(offense_windows(history, team_map), history, 'offense'),
+            'methodologyVersion': 'opponent-production-v2-efficiency'}
 
 def main():
     parser = argparse.ArgumentParser()
