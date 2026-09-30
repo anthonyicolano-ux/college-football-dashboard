@@ -7,9 +7,10 @@
 ## Next improvements — proposed, not implemented
 
 - [x] **Adjusted offense:** passing/rushing opponent adjustment and raw/adjusted offensive ranks added to Matchups. Included in this update; awaiting upload and live refresh. Combined matchup scores remain a separate proposed task.
-- [ ] **Pace and play volume:** add attempts faced per game and opponent-adjusted yards per attempt/carry to distinguish efficiency from volume.
+- [x] **Volume and efficiency:** attempts/game, attempts versus opponent baseline, adjusted yards per attempt/carry and efficiency ranks included in the current update; awaiting upload and refresh. True plays/minute remains unimplemented.
 - [ ] **Player game logs:** allow opening a player’s game-by-game production, opponent, and usage behind window totals.
-- [ ] **Sample confidence:** show clearer early-season confidence indicators and opponent-baseline game counts; consider transparent shrinkage toward national averages.
+- [x] **Sample indicators:** minimum opponent baseline games and usable efficiency games included in the current update.
+- [ ] **Sample confidence model:** consider transparent shrinkage toward national averages and validate calibration before publishing confidence scores.
 - [ ] **Stat completeness:** audit TD, interception and player-category gaps; show field coverage rather than treating missing categories as zero. Distinguish confirmed appearances from games with recorded offensive stats if a reliable source exists.
 - [ ] **Refresh efficiency:** share private fetched inputs across the updaters and cache unchanged games to reduce API quota use, while periodically rechecking source corrections.
 - [ ] **Data freshness:** expose the latest refresh attempt separately from the last successful publication, plus visibly stale-data indicators.
@@ -31,3 +32,14 @@
 - [x] Schedule updater and workflow integration.
 
 Targets stay deferred while the Matchups view is installed.
+
+## Suggested implementation bundles
+
+- **Current bundle — volume, efficiency and sample indicators:** shared game inputs, no extra API requests; included in this update, awaiting upload/live refresh.
+- **Receiving usage bundle — deferred:** targets, target share and receiver attribution coverage should be developed together after enriched passing data is validated.
+- **Player detail bundle — proposed:** game logs and recent-form summaries can share one player-history view.
+- **Operational bundle — proposed:** reduce duplicate API calls, cache/recheck source corrections, and expose refresh failures/stale data together.
+- **Modeling bundle — separate:** shrinkage, combined matchup ratings and projections require backtesting/calibration before release.
+- **New-source work — separate:** injuries and optional snap counts need their own coverage and rights checks.
+
+Bundling reduces repeated integration work; it does not guarantee a bug-free release. Each bundle should retain calculation and source-coverage checks.
