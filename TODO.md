@@ -6,7 +6,7 @@
 
 ## Next improvements — proposed, not implemented
 
-- [ ] **Adjusted offense:** add opponent-adjusted rushing/passing offense so matchup analysis can evaluate both sides. Define and test the model before adding a combined matchup score.
+- [x] **Adjusted offense:** passing/rushing opponent adjustment and raw/adjusted offensive ranks added to Matchups. Included in this update; awaiting upload and live refresh. Combined matchup scores remain a separate proposed task.
 - [ ] **Pace and play volume:** add attempts faced per game and opponent-adjusted yards per attempt/carry to distinguish efficiency from volume.
 - [ ] **Player game logs:** allow opening a player’s game-by-game production, opponent, and usage behind window totals.
 - [ ] **Sample confidence:** show clearer early-season confidence indicators and opponent-baseline game counts; consider transparent shrinkage toward national averages.
