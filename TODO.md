@@ -12,8 +12,9 @@
 - [x] **Sample indicators:** minimum opponent baseline games and usable efficiency games included in the current update.
 - [ ] **Sample confidence model:** consider transparent shrinkage toward national averages and validate calibration before publishing confidence scores.
 - [ ] **Stat completeness:** audit TD, interception and player-category gaps; show field coverage rather than treating missing categories as zero. Distinguish confirmed appearances from games with recorded offensive stats if a reliable source exists.
-- [ ] **Refresh efficiency:** share private fetched inputs across the updaters and cache unchanged games to reduce API quota use, while periodically rechecking source corrections.
-- [ ] **Data freshness:** expose the latest refresh attempt separately from the last successful publication, plus visibly stale-data indicators.
+- [x] **Refresh efficiency:** share API responses privately within one refresh. Fetch every source again on each run to pick up corrections. Included in this update; awaiting installation.
+- [ ] **Persistent game caching:** consider only after defining a source-correction recheck policy; not implemented.
+- [x] **Data freshness:** latest published attempt, last validated refresh, per-page dataset times and 108-hour stale warning included in this update. Cancelled runs or failed status publication may remain absent.
 - [ ] **All-opponents option:** add FCS-inclusive raw results as a separately labeled view. Keep opponent-adjusted comparisons within a clearly defined eligible population.
 - [ ] **Home/away and conference splits:** introduce additional windows after core comparisons are validated.
 - [ ] **Injuries and roster changes:** investigate a reliable, permitted source before displaying availability indicators.
@@ -38,7 +39,7 @@ Targets remain deferred by request.
 - **Current bundle — volume, efficiency and sample indicators:** shared game inputs, no extra API requests; included in this update, awaiting upload/live refresh.
 - **Receiving usage bundle — deferred:** targets, target share and receiver attribution coverage should be developed together after enriched passing data is validated.
 - **Player detail bundle — proposed:** game logs and recent-form summaries can share one player-history view.
-- **Operational bundle — proposed:** reduce duplicate API calls, cache/recheck source corrections, and expose refresh failures/stale data together.
+- **Operational bundle — included:** reduce duplicate requests within each refresh, recheck all source inputs on each run, stage the dataset set before publication, and expose published refresh results/stale data.
 - **Modeling bundle — separate:** shrinkage, combined matchup ratings and projections require backtesting/calibration before release.
 - **New-source work — separate:** injuries and optional snap counts need their own coverage and rights checks.
 
@@ -59,3 +60,11 @@ Bundling reduces repeated integration work; it does not guarantee a bug-free rel
 - [x] Derived player logs published in existing players.json; no additional API requests.
 - [x] Player detail page, name links, recent window summaries, and explicit no-recorded-stats rows.
 - [ ] Targets remain deferred by request.
+
+
+## Refresh operations bundle — included in this update
+
+- [x] Stage all three datasets; publish them in one commit only after all validators pass.
+- [x] Publish a small failure status without replacing validated datasets.
+- [x] Shared freshness/status banner on all five dashboard pages.
+- [ ] Persistent cross-run caching remains deferred; no raw API responses or credentials are stored publicly.
