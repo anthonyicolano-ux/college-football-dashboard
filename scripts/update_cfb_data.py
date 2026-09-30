@@ -73,6 +73,59 @@ def rank(rows, key, output):
     for row in rows:
         row.setdefault(output, None)
 
+def offense_windows(history, team_map):
+    """Rank offense by production relative to opponents' other-game allowances."""
+    windows = {}
+    for unit in ('pass', 'rush'):
+        windows[unit] = {}
+        for period, limit in (('season', None), ('last3', 3), ('last1', 1)):
+            rows = []
+            for tid, team in team_map.items():
+                selected = history[tid] if limit is None else history[tid][-limit:]
+                n = len(selected)
+                row = {'teamId': tid, 'team': team['school'], 'conference': team.get('conference') or 'Independent',
+                       'games': n, 'baselineGames': 0, 'ypg': None, 'eff': None, 'td': None,
+                       'comp': None, 'ints': None, 'expected': None, 'adjustedActual': None, 'ratio': None}
+                if n:
+                    def total(field):
+                        values = [g['offense'][unit].get(field) for g in selected]
+                        return sum(values) if all(v is not None for v in values) else None
+                    yards, attempts = total('yards'), total('attempts')
+                    row['ypg'] = yards / n
+                    row['eff'] = yards / attempts if attempts else None
+                    row['td'] = total('td') / n if total('td') is not None else None
+                    if unit == 'pass':
+                        row['comp'] = 100 * total('completions') / attempts if attempts else None
+                        row['ints'] = total('ints')
+                    actual, expected = [], []
+                    for game in selected:
+                        others = [g for g in history[game['opponent']] if g['id'] != game['id']]
+                        if others:
+                            baseline = sum(g['allowed'][unit]['yards'] for g in others) / len(others)
+                            if baseline > 0:
+                                expected.append(baseline)
+                                actual.append(game['offense'][unit]['yards'])
+                    row['baselineGames'] = len(expected)
+                    if expected:
+                        row['expected'] = sum(expected) / len(expected)
+                        row['adjustedActual'] = sum(actual) / len(actual)
+                        row['ratio'] = 100 * sum(actual) / sum(expected)
+                row['adjustedEligible'] = n > 0 and row['baselineGames'] == n
+                row['_rawSort'] = -row['ypg'] if row['ypg'] is not None else None
+                row['_adjustedSort'] = -row['ratio'] if row['adjustedEligible'] else None
+                rows.append(row)
+            rank(rows, '_rawSort', 'rawRank')
+            rank(rows, '_adjustedSort', 'adjRank')
+            comparable = [dict(r) for r in rows if r['adjRank'] is not None]
+            rank(comparable, '_rawSort', 'comparableRawRank')
+            comparison = {r['teamId']: r['comparableRawRank'] for r in comparable}
+            for row in rows:
+                row['comparableRawRank'] = comparison.get(row['teamId'])
+                row['delta'] = row['comparableRawRank'] - row['adjRank'] if row['adjRank'] is not None else None
+                del row['_rawSort'], row['_adjustedSort']
+            windows[unit][period] = rows
+    return windows
+
 def derive(teams, games, boxes, year):
     team_map = {int(t['id']): t for t in teams}
     if not team_map or len(team_map) != len(teams):
@@ -163,7 +216,9 @@ def derive(teams, games, boxes, year):
             windows[unit][period] = rows
     return {'schemaVersion': 1, 'season': year, 'generatedAt': datetime.now(timezone.utc).isoformat(),
             'source': 'CollegeFootballData', 'simulated': False, 'scope': 'FBS opponents only',
-            'completedGames': len(eligible), 'teamCount': len(teams), 'windows': windows}
+            'completedGames': len(eligible), 'teamCount': len(teams), 'windows': windows,
+            'offenseWindows': offense_windows(history, team_map),
+            'methodologyVersion': 'opponent-production-v1'}
 
 def main():
     parser = argparse.ArgumentParser()
