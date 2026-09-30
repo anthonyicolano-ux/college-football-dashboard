@@ -6,8 +6,8 @@
 
 ## Next improvements — proposed, not implemented
 
-- [x] **Adjusted offense:** passing/rushing opponent adjustment and raw/adjusted offensive ranks added to Matchups. Included in this update; awaiting upload and live refresh. Combined matchup scores remain a separate proposed task.
-- [x] **Volume and efficiency:** attempts/game, attempts versus opponent baseline, adjusted yards per attempt/carry and efficiency ranks included in the current update; awaiting upload and refresh. True plays/minute remains unimplemented.
+- [x] **Adjusted offense:** passing/rushing opponent adjustment and raw/adjusted offensive ranks added to Matchups. Installed and confirmed working.
+- [x] **Volume and efficiency:** attempts/game, attempts versus opponent baseline, adjusted yards per attempt/carry and efficiency ranks installed and confirmed working. True plays/minute remains unimplemented.
 - [ ] **Player game logs:** allow opening a player’s game-by-game production, opponent, and usage behind window totals.
 - [x] **Sample indicators:** minimum opponent baseline games and usable efficiency games included in the current update.
 - [ ] **Sample confidence model:** consider transparent shrinkage toward national averages and validate calibration before publishing confidence scores.
@@ -31,7 +31,7 @@
 - [x] Upcoming-game selector, either-team offense selection and manual team comparison.
 - [x] Schedule updater and workflow integration.
 
-Targets stay deferred while the Matchups view is installed.
+Targets remain deferred by request.
 
 ## Suggested implementation bundles
 
@@ -43,3 +43,12 @@ Targets stay deferred while the Matchups view is installed.
 - **New-source work — separate:** injuries and optional snap counts need their own coverage and rights checks.
 
 Bundling reduces repeated integration work; it does not guarantee a bug-free release. Each bundle should retain calculation and source-coverage checks.
+
+
+## Weekly matchup screen — included in this update
+
+- [x] Passing and rushing weekly rankings from the existing validated datasets.
+- [x] Balanced and efficiency-first weighting, score breakdowns, sample filters, and alternate-view ranks.
+- [x] Links that open the exact game and offensive side in Matchups.
+- [ ] Historical backtesting of the descriptive score before any predictive labels or projections.
+- [ ] Player game logs and recent-form summaries remain the next proposed feature bundle.
