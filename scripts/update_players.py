@@ -129,13 +129,43 @@ def derive_players(teams, games, team_boxes, player_boxes, roster, year):
                 row[share] = 100 * row[f] / denominator if row[f] is not None and denominator and denominator > 0 else None
             rows.append(row)
         windows[period] = rows
+    # Derived dashboard logs, including team games with no recorded player stats.
+    game_meta = {g['id']: g for g in eligible}
+    player_logs = []
+    for identity in windows['season']:
+        tid, pid = identity['teamId'], identity['playerId']
+        records = history[(tid, pid)]
+        logs = []
+        for gid in reversed(team_games[tid]):
+            g = game_meta[gid]
+            p = records.get(gid)
+            oid = g['awayId'] if g['homeId'] == tid else g['homeId']
+            row = {'gameId': gid, 'date': g['startDate'], 'week': g.get('week'),
+                   'seasonType': g.get('seasonType'), 'opponentId': oid,
+                   'opponent': teams_by_id[oid]['school'],
+                   'location': 'Neutral' if g.get('neutralSite') else ('Home' if g['homeId'] == tid else 'Away'),
+                   'recorded': p is not None, **{f: p[f] if p else None for f in FIELDS}}
+            for numerator, denominator, field, scale in (
+                    ('completions', 'attempts', 'compPct', 100),
+                    ('passYards', 'attempts', 'ypa', 1),
+                    ('rushYards', 'carries', 'ypc', 1),
+                    ('recYards', 'receptions', 'ypr', 1)):
+                a, b = row[numerator], row[denominator]
+                row[field] = scale * a / b if a is not None and b is not None and b > 0 else None
+            for field, share in (('carries', 'carryShare'), ('receptions', 'receptionShare')):
+                denominator = totals[(tid, gid)][field]
+                if row[field] is not None and denominator is not None and row[field] > denominator:
+                    raise ValueError('Player game usage exceeds team total')
+                row[share] = 100 * row[field] / denominator if row[field] is not None and denominator and denominator > 0 else None
+            logs.append(row)
+        player_logs.append({k: identity[k] for k in ('playerId', 'teamId', 'name', 'team', 'conference', 'position')} | {'games': logs})
     classified = sum(p['position'] != 'Other' for p in windows['season'])
     if not classified:
         raise ValueError('No roster positions matched player statistics')
     return {'schemaVersion': 1, 'season': year, 'generatedAt': datetime.now(timezone.utc).isoformat(),
             'source': 'CollegeFootballData', 'simulated': False, 'scope': 'FBS opponents only',
             'completedGames': len(eligible), 'playerCount': len(history), 'classifiedPlayers': classified,
-            'windows': windows}
+            'windows': windows, 'playerLogs': player_logs, 'playerLogVersion': 1}
 
 def main():
     parser = argparse.ArgumentParser()
@@ -177,3 +207,4 @@ if __name__ == '__main__':
     except (ValueError, KeyError, TypeError) as e:
         print('Player refresh failed: ' + str(e), file=sys.stderr)
         sys.exit(1)
+
