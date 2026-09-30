@@ -8,7 +8,7 @@
 
 - [x] **Adjusted offense:** passing/rushing opponent adjustment and raw/adjusted offensive ranks added to Matchups. Installed and confirmed working.
 - [x] **Volume and efficiency:** attempts/game, attempts versus opponent baseline, adjusted yards per attempt/carry and efficiency ranks installed and confirmed working. True plays/minute remains unimplemented.
-- [ ] **Player game logs:** allow opening a player’s game-by-game production, opponent, and usage behind window totals.
+- [x] **Player game logs and recent form:** included in this update; requires upload and refresh. Links from Player Stats and Matchups, per-game production/usage, and Season/Last 3/Last Game comparisons with recorded-game coverage.
 - [x] **Sample indicators:** minimum opponent baseline games and usable efficiency games included in the current update.
 - [ ] **Sample confidence model:** consider transparent shrinkage toward national averages and validate calibration before publishing confidence scores.
 - [ ] **Stat completeness:** audit TD, interception and player-category gaps; show field coverage rather than treating missing categories as zero. Distinguish confirmed appearances from games with recorded offensive stats if a reliable source exists.
@@ -52,3 +52,10 @@ Bundling reduces repeated integration work; it does not guarantee a bug-free rel
 - [x] Links that open the exact game and offensive side in Matchups.
 - [ ] Historical backtesting of the descriptive score before any predictive labels or projections.
 - [ ] Player game logs and recent-form summaries remain the next proposed feature bundle.
+
+
+## Player history bundle — included in this update
+
+- [x] Derived player logs published in existing players.json; no additional API requests.
+- [x] Player detail page, name links, recent window summaries, and explicit no-recorded-stats rows.
+- [ ] Targets remain deferred by request.
