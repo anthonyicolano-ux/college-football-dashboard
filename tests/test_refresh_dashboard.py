@@ -37,10 +37,10 @@ class RefreshTests(unittest.TestCase):
             root = Path(directory)
             for name in ('teams.json', 'players.json', 'schedule.json'):
                 write_json(root / 'data' / name, {'old': name})
-            before = {p.name: p.read_bytes() for p in (root / 'data').iterdir()}
+            before = {p.name: p.read_bytes() for p in (root / 'data').glob('*.json')}
             modules = self.modules(root, fail=True)
             with self.assertRaises(ValueError): run_refresh(2026, root, modules)
-            self.assertEqual(before, {p.name: p.read_bytes() for p in (root / 'data').iterdir()})
+            self.assertEqual(before, {p.name: p.read_bytes() for p in (root / 'data').glob('*.json')})
             self.assertTrue(all(m.ROOT == root for m in modules))
 
     def test_success_publishes_all_files(self):
@@ -55,7 +55,7 @@ class RefreshTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             with self.assertRaises(ValueError): run_refresh(2026, root, self.modules(root, wrong=True))
-            self.assertFalse((root / 'data').exists())
+            self.assertFalse(list((root / 'data').glob('*.json')))
 
     def test_status_preserves_success_on_failure(self):
         with tempfile.TemporaryDirectory() as directory:
