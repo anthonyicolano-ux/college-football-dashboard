@@ -7,6 +7,7 @@ from pathlib import Path
 import shutil
 import sys
 import tempfile
+import uuid
 
 ROOT = Path(__file__).resolve().parents[1]
 DATA_FILES = ('teams.json', 'players.json', 'schedule.json')
@@ -29,12 +30,32 @@ def memoized_api(fetch):
         return deepcopy(cache[identity])
     return shared
 
+def request_counter(root):
+    """Persist counts before each request so retries and failed runs count."""
+    marker = root / 'data' / 'refresh-attempt.tmp'
+    attempt = json.loads(marker.read_text()) if marker.exists() else {}
+    counts = {'token': attempt.get('token') or uuid.uuid4().hex,
+              'startedAt': attempt.get('startedAt') or now(),
+              'requests': 0, 'byEndpoint': {}, 'byMonth': {}}
+    path = root / 'data' / 'api-attempt.tmp'
+    write_json(path, counts)
+    def observe(endpoint):
+        month = now()[:7]
+        counts['requests'] += 1
+        counts['byEndpoint'][endpoint] = counts['byEndpoint'].get(endpoint, 0) + 1
+        counts['byMonth'][month] = counts['byMonth'].get(month, 0) + 1
+        write_json(path, counts)
+    return observe
+
 def run_refresh(year, root=ROOT, modules=None):
     if modules is None:
         import update_cfb_data
         import update_players
         import update_schedule
         modules = (update_cfb_data, update_players, update_schedule)
+    observer = request_counter(root)
+    old_observer = getattr(modules[0], 'API_REQUEST_OBSERVER', None)
+    modules[0].API_REQUEST_OBSERVER = observer
     shared = memoized_api(modules[0].api)
     original_argv = sys.argv[:]
     originals = [(m, m.ROOT, m.api) for m in modules]
@@ -67,6 +88,7 @@ def run_refresh(year, root=ROOT, modules=None):
             for name in outputs:
                 (root / 'data' / (name + '.tmp')).replace(root / 'data' / name)
     finally:
+        modules[0].API_REQUEST_OBSERVER = old_observer
         sys.argv = original_argv
         for module, old_root, old_api in originals:
             module.ROOT, module.api = old_root, old_api
@@ -86,11 +108,24 @@ def record_status(year, outcome, run_url, root=ROOT):
             seasons.add(data.get('season'))
     fallback = min(dates.values()) if len(dates) == 3 and all(dates.values()) and len(seasons) == 1 else None
     last_success = finished if outcome == 'success' else previous.get('lastSuccessAt') or fallback
+    counter_path = root / 'data' / 'api-attempt.tmp'
+    counter = json.loads(counter_path.read_text()) if counter_path.exists() else None
+    usage = dict(previous.get('apiUsage') or {})
+    monthly = dict(usage.get('monthlyRequests') or {})
+    if counter and counter['token'] != usage.get('lastRecordedToken'):
+        for month, count in counter['byMonth'].items():
+            monthly[month] = monthly.get(month, 0) + count
+    usage.update({'trackingStartedAt': usage.get('trackingStartedAt') or (counter or {}).get('startedAt') or started or finished,
+                  'monthlyRequests': monthly, 'latestRequests': counter['requests'] if counter else None,
+                  'latestByEndpoint': counter['byEndpoint'] if counter else {},
+                  'lastRecordedToken': counter['token'] if counter else usage.get('lastRecordedToken'),
+                  'scope': 'Tracked dashboard requests only; UTC calendar months. Excludes earlier runs, other applications, and counts from runs whose status could not be published. Not the official CFBD account counter.'})
     write_json(path, {'schemaVersion': 1, 'attemptedSeason': year, 'startedAt': started,
                       'finishedAt': finished, 'outcome': outcome, 'lastSuccessAt': last_success,
-                      'datasetGeneratedAt': dates, 'runUrl': run_url,
+                      'datasetGeneratedAt': dates, 'runUrl': run_url, 'apiUsage': usage,
                       'message': 'All datasets validated.' if outcome == 'success' else 'Refresh failed; last validated datasets preserved.'})
     marker.unlink(missing_ok=True)
+    counter_path.unlink(missing_ok=True)
 
 def main():
     parser = argparse.ArgumentParser()
@@ -100,7 +135,8 @@ def main():
     parser.add_argument('--run-url', default='')
     args = parser.parse_args()
     if args.begin:
-        write_json(ROOT / 'data' / 'refresh-attempt.tmp', {'startedAt': now(), 'season': args.year})
+        write_json(ROOT / 'data' / 'refresh-attempt.tmp', {'startedAt': now(), 'season': args.year, 'token': uuid.uuid4().hex})
+        request_counter(ROOT)
     elif args.record:
         record_status(args.year, args.record, args.run_url)
     else:
@@ -113,3 +149,4 @@ if __name__ == '__main__':
         # Never publish exception text or raw API responses in status JSON.
         print('Dashboard refresh failed. See the workflow step for details.', file=sys.stderr)
         raise
+

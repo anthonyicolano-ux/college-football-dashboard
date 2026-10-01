@@ -110,6 +110,14 @@ def derive_players(teams, games, team_boxes, player_boxes, roster, year):
                    'team': teams_by_id[tid]['school'], 'conference': teams_by_id[tid].get('conference') or 'Independent',
                    'position': positions.get((tid, pid), 'Other'), 'statGames': len(recorded),
                    'teamGames': len(selected), **{f: total(f) for f in FIELDS}}
+            coverage = {f: {'available': sum(p[f] is not None for p in recorded), 'total': len(recorded)} for f in FIELDS}
+            for field, numerator, denominator in (('compPct', 'completions', 'attempts'), ('ypa', 'passYards', 'attempts'), ('ypc', 'rushYards', 'carries'), ('ypr', 'recYards', 'receptions')):
+                coverage[field] = {'available': sum(p[numerator] is not None and p[denominator] is not None for p in recorded), 'total': len(recorded)}
+            for field in ('attempts', 'passYards', 'carries', 'rushYards', 'receptions', 'recYards', 'targets', 'passTD', 'rushTD', 'recTD'):
+                coverage[field + 'PerGame'] = dict(coverage[field])
+            for field, share in (('carries', 'carryShare'), ('receptions', 'receptionShare'), ('targets', 'targetShare')):
+                coverage[share] = {'available': sum(p[field] is not None and totals[(tid, p['gameId'])][field] is not None for p in recorded), 'total': len(recorded)}
+            row['fieldCoverage'] = coverage
             if row['position'] not in ('QB', 'RB', 'WR', 'TE'):
                 row['position'] = 'Other'
             def ratio(numerator, denominator, scale=1):
@@ -207,4 +215,5 @@ if __name__ == '__main__':
     except (ValueError, KeyError, TypeError) as e:
         print('Player refresh failed: ' + str(e), file=sys.stderr)
         sys.exit(1)
+
 

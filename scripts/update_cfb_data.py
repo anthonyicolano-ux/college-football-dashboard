@@ -13,12 +13,15 @@ from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 
 ROOT = Path(__file__).resolve().parents[1]
+API_REQUEST_OBSERVER = None
 
 def api(path, key, **params):
     request = Request('https://api.collegefootballdata.com' + path + '?' + urlencode(params),
                       headers={'Authorization': 'Bearer ' + key, 'Accept': 'application/json'})
     for attempt in range(3):
         try:
+            if API_REQUEST_OBSERVER is not None:
+                API_REQUEST_OBSERVER(path)
             with urlopen(request, timeout=60) as response:
                 result = json.load(response)
             if not isinstance(result, list):
@@ -187,6 +190,26 @@ def add_efficiency(windows, history, side):
                 del row['_effSort']
     return windows
 
+def add_stat_coverage(windows, history, side):
+    """Count reported fields; do not infer appearances or missing zeroes."""
+    for unit in ('pass', 'rush'):
+        for period, limit in (('season', None), ('last3', 3), ('last1', 1)):
+            for row in windows[unit][period]:
+                selected = history[row['teamId']] if limit is None else history[row['teamId']][-limit:]
+                n = len(selected)
+                mapping = {'ypg': ('yards',), 'eff': ('yards', 'attempts'),
+                           'attemptsPerGame': ('attempts',), 'td': ('td',)}
+                if unit == 'pass':
+                    mapping.update({'comp': ('completions', 'attempts'), 'ints': ('ints',)})
+                coverage = {key: {'available': sum(all(g[side][unit].get(f) is not None for f in fields) for g in selected), 'total': n}
+                            for key, fields in mapping.items()}
+                if side == 'allowed':
+                    coverage['points'] = {'available': sum(g.get('points') is not None for g in selected), 'total': n}
+                for key, count in (('ratio', 'baselineGames'), ('adjustedEffRatio', 'effBaselineGames'), ('volumeRatio', 'volumeBaselineGames')):
+                    coverage[key] = {'available': row[count], 'total': n}
+                row['fieldCoverage'] = coverage
+    return windows
+
 def derive(teams, games, boxes, year):
     team_map = {int(t['id']): t for t in teams}
     if not team_map or len(team_map) != len(teams):
@@ -277,8 +300,8 @@ def derive(teams, games, boxes, year):
             windows[unit][period] = rows
     return {'schemaVersion': 1, 'season': year, 'generatedAt': datetime.now(timezone.utc).isoformat(),
             'source': 'CollegeFootballData', 'simulated': False, 'scope': 'FBS opponents only',
-            'completedGames': len(eligible), 'teamCount': len(teams), 'windows': add_efficiency(windows, history, 'allowed'),
-            'offenseWindows': add_efficiency(offense_windows(history, team_map), history, 'offense'),
+            'completedGames': len(eligible), 'teamCount': len(teams), 'windows': add_stat_coverage(add_efficiency(windows, history, 'allowed'), history, 'allowed'),
+            'offenseWindows': add_stat_coverage(add_efficiency(offense_windows(history, team_map), history, 'offense'), history, 'offense'),
             'methodologyVersion': 'opponent-production-v2-efficiency'}
 
 def main():
@@ -314,3 +337,4 @@ if __name__ == '__main__':
     except (ValueError, KeyError, TypeError) as e:
         print('Refresh failed: ' + str(e), file=sys.stderr)
         sys.exit(1)
+
