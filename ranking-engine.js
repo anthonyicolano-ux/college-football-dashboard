@@ -14,5 +14,28 @@ function localDate(date){return new Intl.DateTimeFormat('en-CA',{timeZone:'Ameri
 function monday(date){const d=new Date(date+'T12:00:00Z');d.setUTCDate(d.getUTCDate()-(d.getUTCDay()+6)%7);return d.toISOString().slice(0,10);}
 function gameWeek(g){return g.startDate?monday(g.startTimeTBD?g.startDate.slice(0,10):localDate(g.startDate)):null;}
 function upcoming(g,now=new Date()){if(!g.startDate)return false;if(g.startTimeTBD)return g.startDate.slice(0,10)>=localDate(now);return new Date(g.startDate)>now;}
-const api={weights,eligible,percentile,groups,scorePair,rank,localDate,monday,gameWeek,upcoming};if(typeof module!=='undefined'&&module.exports)module.exports=api;else root.MatchupRanking=api;
+function sensitivity(teams,games,{unit='pass'}={}){
+ const results=new Map(),scenarios=[];
+ const key=(game,side)=>String(game.id)+':'+side;
+ for(const period of ['season','last3'])for(const min of [3,2]){
+  // Both scoring-view ranks come from the same calculation for this population.
+  const ranked=rank(teams,games,{unit,period,min,mode:'balanced'});
+  const lookup=new Map(ranked.rows.map(r=>[key(r.game,r.side),r]));
+  for(const mode of ['balanced','efficiency']){
+   const scenario={period,min,mode};scenarios.push(scenario);
+   for(const game of games)for(const side of ['home','away']){
+    const id=key(game,side),row=lookup.get(id);
+    let reason='';
+    if(!row){const off=(teams.offenseWindows?.[unit]?.[period]||[]).find(r=>r.teamId===(side==='home'?game.homeId:game.awayId));const def=(teams.windows?.[unit]?.[period]||[]).find(r=>r.teamId===(side==='home'?game.awayId:game.homeId));reason=!off||!def?'Window stats unavailable':off.games<min||def.games<min?'Below '+min+' games: offense '+off.games+', defense '+def.games:'Core stats or adjustment coverage incomplete';}
+    if(!results.has(id))results.set(id,[]);
+    results.get(id).push({...scenario,rank:row?.[mode+'Rank']??null,score:row?.[mode]??null,slateSize:ranked.rows.length,reason});
+   }
+  }
+ }
+ const summaries=new Map();
+ for(const [id,screens]of results){const comparable=screens.filter(x=>x.rank!==null),ranks=comparable.map(x=>x.rank);summaries.set(id,{screens,comparable:comparable.length,total:scenarios.length,best:ranks.length?Math.min(...ranks):null,worst:ranks.length?Math.max(...ranks):null,top5:comparable.filter(x=>x.rank<=5).length});}
+ return summaries;
+}
+const api={weights,eligible,percentile,groups,scorePair,rank,sensitivity,localDate,monday,gameWeek,upcoming};if(typeof module!=='undefined'&&module.exports)module.exports=api;else root.MatchupRanking=api;
 })(typeof globalThis!=='undefined'?globalThis:this);
+

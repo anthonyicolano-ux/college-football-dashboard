@@ -90,5 +90,17 @@ Bundling reduces repeated integration work; it does not guarantee a bug-free rel
 - [x] Player Logs navigation is consistent across all five pages; navigation wraps on narrow screens.
 - [ ] Check rendered layouts on a phone and a second browser; no browser visual QA was available locally.
 - [ ] Compare tracked requests with the official CFBD account counter. Earlier runs, other projects and unpublished statuses are outside this tracker.
-- [ ] Historical matchup backtesting and weighting sensitivity remain proposed; no predictive calibration is claimed.
+- [x] Current-data setting sensitivity included in this update: two scoring views, two windows and two sample minimums.
+- [ ] Historical matchup backtesting remains proposed; no predictive calibration is claimed.
 - [ ] Targets and target share remain deferred by request.
+
+
+## Matchup setting sensitivity — included in this update
+
+- [x] Eight descriptive screens per offensive direction, with rank range, top-five count, eligible slate size, scores and explicit exclusions.
+- [x] Main table still follows its selected settings; search preserves full-slate ranks.
+- [x] Reuses existing datasets with no additional API requests or score-weight changes.
+- [ ] Historical pregame backtesting remains open. Setting sensitivity is not a confidence measure or accuracy validation.
+- [ ] Live visual/mobile/second-browser checks remain open because browser permission is still blocked.
+
+The CFBD season-wide public player-log permission question remains awaiting Tony’s follow-up. Targets stay deferred.
