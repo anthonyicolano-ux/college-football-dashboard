@@ -104,3 +104,14 @@ Bundling reduces repeated integration work; it does not guarantee a bug-free rel
 - [ ] Live visual/mobile/second-browser checks remain open because browser permission is still blocked.
 
 The CFBD season-wide public player-log permission question remains awaiting Tony’s follow-up. Targets stay deferred.
+
+
+## How to Use guide — included in this update
+
+- [x] Plain-language workflow, passing/rushing examples, metric definitions and sample/coverage explanations.
+- [x] Sixth consistent navigation button linking the guide from every page.
+- [x] Page/link and unchanged-script checks complete.
+- [ ] Browser/mobile/second-browser visual checks remain open due to the saved permission conflict.
+- [ ] Historical pregame backtesting remains open; current-data sensitivity is descriptive only.
+
+The CFBD public player-log permission question stays awaiting Tony’s follow-up. Targets remain deferred.

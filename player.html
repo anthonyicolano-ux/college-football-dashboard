@@ -4,8 +4,16 @@
 th{padding:15px 13px;line-height:1.4;white-space:normal;font-size:13px;color:#536478}nav{display:flex;gap:18px;flex-wrap:wrap;margin-bottom:22px}.context{color:#536478;font-size:14px;line-height:1.6}.tablebox{margin-bottom:24px}.summary td:nth-child(2),.summary th:nth-child(2){text-align:left}.missing{color:#627185;background:#f7f9fb}.toolbar select{max-width:100%}#player{min-width:260px}h2{font-size:20px}@media(max-width:650px){#player{min-width:0}}
 
 .coverage-details{margin:0;padding:0;border:0;background:transparent;white-space:normal;min-width:180px;max-width:290px;font-size:12px;line-height:1.6;text-align:left}.coverage-details summary{font-weight:500}.coverage-details>div{padding-top:8px}.coverage-note{font-size:12px;color:#627185;white-space:normal}nav{flex-wrap:wrap}
+
+.dashboard-nav{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 22px;padding:0}
+.dashboard-nav a{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:10px 16px;border:1px solid #c8d1dd;border-radius:8px;background:#fff;color:#33475f;font-size:14px;font-weight:650;line-height:1.3;text-decoration:none;transition:background .12s,border-color .12s;white-space:nowrap}
+.dashboard-nav a:hover{background:#e5f3ee;border-color:#5c9f89;color:#173d32}
+.dashboard-nav a[aria-current="page"]{background:#132236;border-color:#132236;color:#fff;box-shadow:inset 0 -3px #5ee0b1}
+.dashboard-nav a:focus-visible{outline:3px solid #21977b;outline-offset:3px}
+@media(max-width:650px){.dashboard-nav{gap:8px}.dashboard-nav a{flex:1 1 calc(50% - 8px);min-width:0;padding:12px 10px;white-space:normal;text-align:center}}
+@media(prefers-reduced-motion:reduce){.dashboard-nav a{transition:none}}
 </style></head><body><header><div><div class="eyebrow">COLLEGE FOOTBALL</div><h1>Player Game Logs</h1></div><span class="tag" id="seasonLabel">Production &amp; recent form</span></header><main>
-<nav aria-label="Dashboard pages"><a href="index.html">Team Defense</a><a href="players.html">Player Stats</a><a href="matchups.html">Matchups</a><a href="rankings.html">Weekly Rankings</a><a href="player.html" aria-current="page">Player Logs</a><a href="player.html">Player Logs</a></nav><div id="refreshHealth" role="status" aria-live="polite"></div>
+<nav class="dashboard-nav" aria-label="Dashboard pages"><a href="index.html">Team Defense</a><a href="players.html">Player Stats</a><a href="matchups.html">Matchups</a><a href="rankings.html">Weekly Rankings</a><a href="player.html" aria-current="page">Player Logs</a><a href="guide.html">How to Use</a></nav><div id="refreshHealth" role="status" aria-live="polite"></div>
 <div id="status" class="notice" role="status">Loading player history…</div>
 <div class="toolbar"><div><label for="team">Team</label><select id="team"></select></div><div><label for="search">Find a player</label><input id="search" type="search" placeholder="Player name…"></div><div><label for="player">Player</label><select id="player"></select></div></div>
 <h2 id="heading">Select a player</h2><p id="context" class="context"></p>
@@ -25,4 +33,5 @@ el('team').onchange=()=>fillPlayers();el('search').oninput=()=>fillPlayers(el('p
 async function load(){try{const r=await fetch('data/players.json',{cache:'no-cache'});if(!r.ok)throw Error('Missing data');data=await r.json();if(data.schemaVersion!==1||data.simulated!==false||data.playerLogVersion!==1||!data.playerLogs?.length)throw Error('Logs not refreshed');const teams=[...new Map(data.playerLogs.map(p=>[p.teamId,p.team])).entries()].sort((a,b)=>a[1].localeCompare(b[1]));el('team').innerHTML=teams.map(([id,name])=>'<option value="'+id+'">'+esc(name)+'</option>').join('');const q=new URLSearchParams(location.search);if(teams.some(([id])=>String(id)===q.get('team')))el('team').value=q.get('team');fillPlayers(q.get('player'));el('seasonLabel').textContent=data.season+' · Player history';el('status').textContent='Updated '+new Date(data.generatedAt).toLocaleString()+' · '+data.playerLogs.length+' players with derived logs. Targets remain deferred.';}catch{data=null;el('status').textContent='Player logs are not available yet. Upload scripts/update_players.py and run Update college football data in Actions, then refresh this page.';render();}}
 render();load();
 </script><script src="refresh-status.js" defer></script></body></html>
+
 
