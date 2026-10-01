@@ -19,9 +19,12 @@ if(status?.finishedAt&&Number.isFinite(Date.parse(status.finishedAt)))line('Last
 if(status?.lastSuccessAt&&Number.isFinite(Date.parse(status.lastSuccessAt)))line('Last validated refresh: '+new Date(status.lastSuccessAt).toLocaleString());
 if(stale.length)line('Stale datasets: '+stale.join(', ')+'. The freshness warning starts after '+staleHours+' hours (4.5 days), allowing for the longest scheduled refresh gap.');
 if(missing.length)line('Missing timestamps: '+missing.join(', ')+'.');
+if(status?.apiUsage){const usage=status.apiUsage;const month=new Date(now).toISOString().slice(0,7);line('API requests tracked this UTC month: '+(usage.monthlyRequests?.[month]??0)+' · Latest attempt: '+(usage.latestRequests??'not recorded'));line('Tracking started '+new Date(usage.trackingStartedAt).toLocaleString()+'. Earlier usage and other applications are excluded; this is not your official account quota counter.');}
 const details=document.createElement('details');details.style.cssText='margin-top:8px;padding:0;border:0;background:transparent';const summary=document.createElement('summary');summary.textContent='Dataset times and refresh details';details.appendChild(summary);
 const text=document.createElement('p');text.textContent=dates.join(' · ')||'No valid dataset timestamps available.';details.appendChild(text);
 const note=document.createElement('p');note.textContent='This reports the latest result successfully published by the workflow. A cancelled run or failed status publication may not appear here. Source statistics can lag behind a successful refresh.';details.appendChild(note);
 if(status?.runUrl){try{const url=new URL(status.runUrl);if(url.origin==='https://github.com'&&/^\/anthonyicolano-ux\/college-football-dashboard\/actions\/runs\/\d+$/.test(url.pathname)){const link=document.createElement('a');link.href=url.href;link.textContent='Open refresh workflow run';details.appendChild(link);}}catch{}}
+if(status?.apiUsage){const usage=status.apiUsage;const count=document.createElement('p');count.textContent='Latest request attempts by endpoint: '+Object.entries(usage.latestByEndpoint||{}).map(([path,n])=>path+' '+n).join(' · ');details.appendChild(count);const scope=document.createElement('p');scope.textContent=usage.scope;details.appendChild(scope);}
 box.appendChild(details);
 })();
+
